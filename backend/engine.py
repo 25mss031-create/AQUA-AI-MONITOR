@@ -293,6 +293,14 @@ class Engine:
                     {"village": config.VILLAGES[0]["name"], "min": round(self._eta(0))}, None)
         await self._emit()
 
+    async def breach_request(self, pin, source):
+        if str(pin) != config.OFFICER_PIN:
+            self._alert(f"{source} (security log)", "high", "pin_rejected", {}, None)
+            await self._emit()
+            return False
+        await self.confirm_breach()
+        return True
+
     async def tick(self):
         s = self.surge
         if s["active"] and not s["arrived"]:

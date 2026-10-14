@@ -4,12 +4,15 @@ import urllib.request
 from . import config
 
 
-def send_telegram(text):
-    if not config.TELEGRAM_BOT_TOKEN or not config.TELEGRAM_CHAT_ID:
+def send_telegram(text, chat_id=None):
+    if not config.TELEGRAM_BOT_TOKEN:
+        return False
+    cid = chat_id or config.TELEGRAM_CHAT_ID
+    if not cid:
         return False
     url = f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/sendMessage"
     data = urllib.parse.urlencode(
-        {"chat_id": config.TELEGRAM_CHAT_ID, "text": text, "disable_web_page_preview": "true"}
+        {"chat_id": cid, "text": text, "disable_web_page_preview": "true"}
     ).encode()
     try:
         req = urllib.request.Request(url, data=data)

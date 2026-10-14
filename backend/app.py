@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import config, db
+from . import config, db, telegram_bot
 from .engine import Engine
 
 
@@ -48,10 +48,13 @@ async def tick_loop():
 async def lifespan(app):
     db.init()
     task = asyncio.create_task(tick_loop())
+    bot_task = telegram_bot.start(engine)
     try:
         yield
     finally:
         task.cancel()
+        if bot_task:
+            bot_task.cancel()
 
 
 app = FastAPI(title="AQUA AI Monitor: River Edition", version="1.0", lifespan=lifespan)
@@ -96,11 +99,9 @@ async def ev_surge():
 
 @app.post("/api/events/breach")
 async def ev_breach(payload: dict = Body(default={})):
-    pin = str(payload.get("pin", ""))
-    if pin != config.OFFICER_PIN:
-        engine._alert("Dashboard (security log)", "high", "pin_rejected", {}, None)
+    ok = await engine.breach_request(payload.get("pin", ""), "Dashboard (web)")
+    if not ok:
         raise HTTPException(status_code=403, detail="Wrong officer PIN")
-    await engine.confirm_breach()
     return {"ok": True}
 
 

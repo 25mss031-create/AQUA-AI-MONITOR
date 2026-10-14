@@ -109,6 +109,32 @@ def offline():
           "SMS" in ch["planned"] and "Telegram Bot API" in ch["implemented"],
           "planned/implemented split present")
 
+    from . import telegram_bot
+
+    old_chat = config.TELEGRAM_CHAT_ID
+    config.TELEGRAM_CHAT_ID = "5551234"
+    bot = telegram_bot.TelegramBot(eng)
+    loop2 = asyncio.new_event_loop()
+    try:
+        r_help = loop2.run_until_complete(bot.handle("5551234", "/help"))
+        r_foreign = loop2.run_until_complete(bot.handle("999", "/status"))
+        r_pend = loop2.run_until_complete(bot.handle("5551234", "/pending"))
+        r_appr = loop2.run_until_complete(bot.handle("5551234", "/approve 1"))
+        r_stat = loop2.run_until_complete(bot.handle("5551234", "/status"))
+        r_pin_bad = loop2.run_until_complete(bot.handle("5551234", "/breach 0000"))
+        breach_after_bad = eng.breach["confirmed"]
+        r_pin_ok = loop2.run_until_complete(bot.handle("5551234", f"/breach {config.OFFICER_PIN}"))
+    finally:
+        loop2.close()
+        config.TELEGRAM_CHAT_ID = old_chat
+    check("bot help lists the commands", "/approve" in r_help and "/breach" in r_help)
+    check("bot ignores other chats", r_foreign is None)
+    check("bot lists the review queue", "Textile waste" in r_pend)
+    check("bot approve resolves the item", "confirmed" in r_appr and len(eng.pending) == 0)
+    check("bot status shows risk", "Below dam" in r_stat)
+    check("bot rejects a wrong PIN", "REJECTED" in r_pin_bad and not breach_after_bad)
+    check("bot accepts the real PIN", eng.breach["confirmed"] and "confirmed" in r_pin_ok.lower())
+
 
 def online():
     try:
@@ -132,6 +158,19 @@ def online():
 
     siren = get("/api/device/siren")
     check("siren endpoint shape", "siren" in siren and "beacon" in siren)
+
+    if config.TELEGRAM_BOT_TOKEN:
+        from . import telegram_bot
+
+        try:
+            me = telegram_bot.api_call("getMe")
+            username = (me.get("result") or {}).get("username", "")
+            check("telegram bot token valid", bool(me.get("ok") and username), username)
+        except Exception as e:
+            check("telegram bot token valid", False, str(e))
+    else:
+        skip("telegram officer bot",
+             "set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID, restart the backend to enable it")
 
 
 def main():

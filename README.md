@@ -198,18 +198,45 @@ exists. Real remote sites need a **GSM or LoRa link** in place of WiFi and a
 **solar panel + battery** instead of mains/USB. Neither is implemented in this
 repository — see the planned table above.
 
-## Telegram alerts (free)
+## Telegram officer bot (free)
 
-Set these environment variables before starting the backend:
+The backend includes a bidirectional Telegram bot (`backend/telegram_bot.py`):
+alerts are pushed to your chat, and you can drive the demo from your phone.
+It uses long polling over HTTPS — no new Python dependencies.
+
+### Set it up (about 2 minutes)
+
+1. In Telegram, talk to **@BotFather** → send `/newbot` → follow the prompts →
+   copy the **token** it gives you (looks like `123456789:AAE...`).
+2. Talk to your new bot, send `/start`, then open
+   **@userinfobot** (or send `/getid` to a group bot) to copy your **chat id**.
+3. Set both values and restart the backend:
 
 ```
-set TELEGRAM_BOT_TOKEN=123456:ABC...
+set TELEGRAM_BOT_TOKEN=123456789:AAE...
 set TELEGRAM_CHAT_ID=987654321
 python run.py
 ```
 
-When set, every alert is also pushed to Telegram. The dashboard shows
-`Telegram: live`.
+The header badge shows `Telegram: live`, and
+`python -m backend.selfcheck` verifies the token with `getMe`.
+
+### Commands (only your chat is answered)
+
+| Command | Effect |
+|---|---|
+| `/status` | Risk by stretch, river level, siren/beacon, battery, RSSI, GPS |
+| `/alerts` | Last 3 alerts, bilingual |
+| `/pending` | Detections waiting for an officer decision |
+| `/approve N` | Confirm item N is a real dye/effluent discharge → TNPCB notified |
+| `/dismiss N` | Item N is a false detection, nothing is sent |
+| `/cap` | CAP alert JSON |
+| `/breach PIN` | Confirm dam breach — same officer PIN as the dashboard; wrong PIN is rejected and logged |
+| `/reset` | Reset the demo |
+| `/help` | Command list |
+
+Security: the bot answers only `TELEGRAM_CHAT_ID`, and `/breach` still needs
+the officer PIN — the bot is not a bypass.
 
 ## API summary
 

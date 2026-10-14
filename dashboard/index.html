@@ -113,7 +113,7 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:
 
 <section class="card"><h2>Alert channels</h2>
 <div class="dev" id="chanList"></div>
-<p class="note">Only channels marked <b>live</b> are wired up in this build. SMS, email, Firebase push and the LoRa/GSM field link are planned for field deployment and are not implemented yet.</p></section>
+<p class="note">Only channels marked <b>live</b> are wired up in this build. The Telegram bot accepts officer commands from your chat: <code>/status</code>, <code>/alerts</code>, <code>/pending</code>, <code>/approve N</code>, <code>/dismiss N</code>, <code>/cap</code>, <code>/breach PIN</code>, <code>/reset</code>. SMS, email, Firebase push and the LoRa/GSM field link are planned for field deployment and are not implemented yet.</p></section>
 
 <section class="card"><h2>AI detections (YOLO output)</h2><div class="scroll"><table><thead><tr><th>Time</th><th>Stretch</th><th>Class</th><th>Confidence</th><th>Status</th><th>Location (chainage/GPS)</th></tr></thead><tbody id="det"><tr><td colspan="6" class="note">No detections yet. Run backend/yolo_detector.py on a river photo or the webcam.</td></tr></tbody></table></div>
 <p class="note">Detections stream live from the YOLO runner. Each marker sits on the real river by chainage until a GPS fix arrives from the boat. Status is honest: <b>needs review</b> = waiting for an officer, <b>notified TNPCB</b> = auto-escalated at 90%+, <b>logged only</b> = recorded, no notice sent.</p>
@@ -251,7 +251,7 @@ function drawDev(s){
 }
 function drawChannels(s){
   const c=s.channels||{};
-  const live=[['Dashboard + WebSocket',true],['Telegram Bot API',!!c.telegram],['Ghat siren + beacon',c.siren_beacon!==false],['CAP export (file)',c.cap_export!==false]];
+  const live=[['Dashboard + WebSocket',true],['Telegram Bot API (alerts + officer commands)',!!c.telegram],['Ghat siren + beacon',c.siren_beacon!==false],['CAP export (file)',c.cap_export!==false]];
   const planned=c.planned||[];
   $('chanList').innerHTML=
     live.map(x=>`<div><span class="note">Implemented</span><b style="font-size:14px">${x[0]}</b><span class="note">${x[1]?'live':'not configured'}</span></div>`).join('')
