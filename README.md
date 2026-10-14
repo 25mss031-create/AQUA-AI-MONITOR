@@ -191,6 +191,24 @@ PlatformIO. It POSTs to `/api/readings` and polls `/api/device/siren` so the
 backend can switch the siren and beacon. Libraries: `OneWire`,
 `DallasTemperature`, `TinyGPSPlus`.
 
+### Build the firmware (PlatformIO, verified)
+
+```
+cd esp32/aqua_boat
+python -m platformio run
+```
+
+`platformio.ini` pins the board (`esp32dev`) and pulls the three libraries
+automatically; the first run downloads the ESP32 core once. Last build:
+RAM 14.4%, Flash 71.2%. To flash a board on USB:
+
+```
+python -m platformio run -t upload
+```
+
+Arduino IDE works too: install the **esp32** board package and the libraries
+**DallasTemperature**, **OneWire**, **TinyGPSPlus** from the Library Manager.
+
 ### Field deployment (remote river sites)
 
 The prototype uses WiFi + HTTP because it is demonstrated where a network
