@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+data/aqua.db
+data/annotated/
+*.pt
+.venv/
+env/

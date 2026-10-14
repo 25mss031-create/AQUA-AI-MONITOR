@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AQUA AI Monitor: River Edition</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--bg:#f3f7f9;--card:#fff;--ink:#12303f;--mut:#5b7280;--line:#d5e1e7;--acc:#1d7a8c;
+--low:#2e9e5b;--med:#d99a00;--high:#d64545;--water:#9fd3e6;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1a21;--card:#16272f;--ink:#e6f0f4;--mut:#93a9b4;--line:#27404b;--acc:#4fb6c9;--water:#2b5b70;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Arial,sans-serif}
+header{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+h1{font-size:18px;margin:0}h1 small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+.badge{background:var(--low);color:#fff;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600}
+.badge.off{background:var(--high)}.badge.warn{background:var(--med);color:#111}
+main{padding:14px;max-width:1300px;margin:auto;display:grid;gap:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi,.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+.kpi b{display:block;font-size:22px}.kpi span{color:var(--mut);font-size:12px}
+.grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+h2{font-size:14px;margin:0 0 8px}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center}
+button{background:var(--acc);color:#fff;border:0;border-radius:7px;padding:7px 11px;font-size:13px;cursor:pointer}
+button.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}button.red{background:var(--high)}
+button.sm{padding:3px 8px;font-size:12px}
+input[type=password],input[type=text]{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 7px;color:var(--ink);width:90px;font-size:13px}
+#map{height:430px;border-radius:8px;border:1px solid var(--line)}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:5px 7px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--mut);font-weight:600}
+.pill{padding:1px 8px;border-radius:12px;color:#fff;font-size:12px}
+.low{background:var(--low)}.med{background:var(--med);color:#111}.high{background:var(--high)}.mut{background:var(--mut)}
+.q{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.q div{border:1px solid var(--line);border-radius:8px;padding:8px}.q b{font-size:20px;display:block}
+.q .bad{border-color:var(--high)}.q .bad b{color:var(--high)}
+#log{max-height:240px;overflow:auto;font-size:13px}#log div{padding:5px 0;border-bottom:1px solid var(--line)}
+#log .ta{color:var(--mut);font-size:12px;display:block}
+.lights{display:flex;gap:14px;align-items:center;margin-bottom:8px;font-size:13px}
+.lights i{display:inline-block;width:13px;height:13px;border-radius:50%;background:var(--mut);vertical-align:-2px;margin-right:5px}
+.lights i.on{background:var(--high);animation:bl .5s infinite alternate}@keyframes bl{to{opacity:.2}}
+.lights i.bcn.on{background:var(--med)}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;overflow:auto;font-size:11px;margin:8px 0 0}
+.note{color:var(--mut);font-size:12px}svg{max-width:100%;height:auto;display:block}
+.lgd{display:flex;gap:12px;font-size:12px;color:var(--mut);margin-top:6px;flex-wrap:wrap}
+.lgd i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
+.dev{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.dev div{border:1px solid var(--line);border-radius:8px;padding:8px}
+.devgroup{grid-column:1/-1;border:1px solid var(--line);border-radius:8px;padding:8px}
+.devgroup>.dev div{margin-top:0}
+.dev b{display:block;font-size:17px}.dev span{color:var(--mut);font-size:12px}
+.bar{height:6px;background:var(--line);border-radius:4px;margin-top:5px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--low)}.bar i.warn{background:var(--med)}.bar i.bad{background:var(--high)}
+.rev{border-left:3px solid var(--med);padding-left:10px;margin-bottom:8px}
+.rev b{font-size:13px}.rev .note{display:block}
+</style>
+</head>
+<body>
+<header>
+<h1>AQUA AI Monitor: River Edition<small>Noyyal River pilot, Coimbatore — pollution monitoring &amp; life-safety early warnings</small></h1>
+<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+<span class="badge off" id="conn">connecting</span>
+<span class="badge" id="chan">channels</span>
+<button class="alt" id="lang">தமிழ் / EN</button></div>
+</header>
+<main>
+<div class="kpis">
+<div class="kpi"><b id="k1">0</b><span>Detections today</span></div>
+<div class="kpi"><b id="k2">0</b><span>High-risk stretches</span></div>
+<div class="kpi"><b id="k3">Normal</b><span>River level status</span></div>
+<div class="kpi"><b id="k4">0</b><span>Alerts sent</span></div>
+<div class="kpi"><b id="k5">0</b><span>Needs review</span></div></div>
+
+<div class="grid">
+<section class="card"><h2>River map: risk by stretch (real Noyyal course, OpenStreetMap)</h2>
+<div class="btns">
+<button id="bPol">Simulate wastewater event</button>
+<button id="bSurge" class="red">Simulate surge at riverbank</button>
+<button id="bReset" class="alt">Reset all</button></div>
+<div id="map"></div>
+<div class="lgd"><span><i style="background:var(--low)"></i>Low</span><span><i style="background:var(--med)"></i>Medium</span><span><i style="background:var(--high)"></i>High</span><span><i style="background:var(--water)"></i>Noyyal river</span><span><i style="background:#d64545;border-radius:50%"></i>AI detection</span></div>
+<p class="note">The river line is the real OSM Noyyal course. Stations, ghat, sensor, villages and detections sit on it by chainage (km from the head works).</p></section>
+
+<section class="card"><h2>Water quality (sensor boat)</h2>
+<div class="q" id="wq"></div>
+<p class="note">Anomaly limits: pH outside 6.5 to 8.5, turbidity above 300 NTU, TDS above 1000 ppm. A flag is a warning; lab testing confirms serious cases.</p>
+<h2 style="margin-top:12px">Alert log</h2><div id="log"><div class="note">No alerts yet.</div></div></section></div>
+
+<section class="card" id="reviewCard" hidden><h2 id="revH">Did a dyeing/textile unit discharge here? Officer decision required</h2>
+<div id="review"></div>
+<p class="note" id="revNote">The AI only proposes. An officer must decide whether the sighting means a real dye/effluent discharge before any notice goes to TNPCB. High-concern detections below 85% confidence wait here; at or above 90% TNPCB is notified automatically; in between (85–90%) the event is logged and shown on the map but no notice is sent (PDF §3.2 / §6).</p></section>
+
+<div class="grid">
+<section class="card"><h2>Riverbank surge warning</h2>
+<div class="lights">
+<span><i id="sir"></i>Siren</span>
+<span><i class="bcn" id="bcn"></i>Beacon</span>
+</div>
+<svg id="chart" viewBox="0 0 400 150" role="img" aria-label="Water level chart"></svg>
+<div id="surgeInfo" class="note">Waiting for level data from the upstream dual ultrasonic sensors.</div></section>
+
+<section class="card"><h2>Dam-breach countdown by village</h2>
+<div class="btns">
+<label class="note">Officer PIN <input type="password" id="pin" value="2026"></label>
+<button id="bBreach" class="red">Confirm dam breach</button>
+<button id="bCap" class="alt">Export CAP</button>
+<label class="note">Wave speed <input type="range" id="ws" min="3" max="8" value="5"> <span id="wsv">5</span> m/s</label></div>
+<div class="scroll"><table><thead><tr><th>Village</th><th>Chainage</th><th>Distance</th><th>Arrival in</th><th>Status</th></tr></thead><tbody id="vt"></tbody></table></div>
+<pre id="cap" hidden></pre>
+<p class="note">Only an authorised officer can trigger this (wrong PIN is rejected and logged). Distances are real river chainage; demo runs at 1 second = 1 minute.</p></section></div>
+
+<section class="card"><h2>Field device health (sensor boat + flow station)</h2>
+<div class="dev" id="dev"></div></section>
+
+<section class="card"><h2>Alert channels</h2>
+<div class="dev" id="chanList"></div>
+<p class="note">Only channels marked <b>live</b> are wired up in this build. SMS, email, Firebase push and the LoRa/GSM field link are planned for field deployment and are not implemented yet.</p></section>
+
+<section class="card"><h2>AI detections (YOLO output)</h2><div class="scroll"><table><thead><tr><th>Time</th><th>Stretch</th><th>Class</th><th>Confidence</th><th>Status</th><th>Location (chainage/GPS)</th></tr></thead><tbody id="det"><tr><td colspan="6" class="note">No detections yet. Run backend/yolo_detector.py on a river photo or the webcam.</td></tr></tbody></table></div>
+<p class="note">Detections stream live from the YOLO runner. Each marker sits on the real river by chainage until a GPS fix arrives from the boat. Status is honest: <b>needs review</b> = waiting for an officer, <b>notified TNPCB</b> = auto-escalated at 90%+, <b>logged only</b> = recorded, no notice sent.</p>
+<p class="note" id="modelNote"></p></section>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const cs=getComputedStyle(document.documentElement);
+const COL=[cs.getPropertyValue('--low').trim(),cs.getPropertyValue('--med').trim(),cs.getPropertyValue('--high').trim()];
+const LAB=['Low','Medium','High'];
+let ta=false,map=null,segLayer=null,markerLayer=null,fitted=false,last=null;
+const STAT={pending:'needs review',notified:'notified TNPCB',logged:'logged only',approved:'discharge confirmed',dismissed:'dismissed'};
+const STAT_CL={pending:'med',notified:'high',logged:'mut',approved:'low',dismissed:'mut'};
+const MODEL_NOTE='Model in use: COCO-pretrained yolov8n.pt (80 classes). River classes come from a class mapping — bottle/cup directly, other COCO objects approximately (marked “~”). Textile waste, foam, oil slick and dead fish are not detected by these weights; they need a fine-tuned best.pt (TACO / Noyyal photos), listed as planned work in the project PDF.';
+
+function initMap(){
+  if(typeof L==='undefined'){$('map').innerHTML='<p class="note" style="padding:12px">Map needs internet for OpenStreetMap tiles. Data still works.</p>';return;}
+  map=L.map('map').setView([11.03,77.10],11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);
+  segLayer=L.layerGroup().addTo(map);markerLayer=L.layerGroup().addTo(map);
+}
+function ring(lat,lon,fill,r){return {radius:r||6,color:'#fff',weight:2,fillColor:fill,fillOpacity:1}}
+function drawMap(s){
+  if(!map||!s.river)return;
+  segLayer.clearLayers();markerLayer.clearLayers();
+  L.polyline(s.river,{color:cs.getPropertyValue('--water').trim(),weight:10,opacity:.95}).addTo(segLayer);
+  (s.segments||[]).forEach(x=>{
+    const sp=s.segment_spans&&s.segment_spans[x.id];
+    if(!sp)return;
+    const part=s.river.slice(sp[0],sp[1]);
+    if(part.length>1)L.polyline(part,{color:COL[x.risk],weight:7}).addTo(segLayer);
+    L.circleMarker(part[0],ring(x.name,COL[x.risk])).bindPopup(`<b>${x.id} ${x.name}</b><br>Risk: ${LAB[x.risk]}<br>Chainage: ${x.chain_from} km`).addTo(markerLayer);
+  });
+  const m=s.map;
+  if(m.dam)L.circleMarker([m.dam.lat,m.dam.lon],ring('Dam',cs.getPropertyValue('--mut').trim()))
+    .bindPopup('<b>Head works / dam</b><br>Chainage 0 km reference').addTo(markerLayer);
+  L.circleMarker([m.sensor.lat,m.sensor.lon],ring('sensor',cs.getPropertyValue('--acc').trim()))
+    .bindPopup(`<b>Upstream level sensor</b><br>Dual JSN-SR04T<br>Level A ${s.surge.level_a} m / B ${s.surge.level_b} m`).addTo(markerLayer);
+  L.circleMarker([m.ghat.lat,m.ghat.lon],ring('ghat',s.surge.siren?'#d64545':cs.getPropertyValue('--acc').trim()))
+    .bindPopup(`<b>Ghat siren + beacon</b><br>${s.surge.siren?'ON':'off'}`).addTo(markerLayer);
+  s.villages.forEach(v=>{
+    const c=v.status==='water'||v.status==='evacuate'?'#d64545':v.status==='warned'?'#d99a00':'#2e9e5b';
+    L.circleMarker([v.lat,v.lon],{radius:7,color:c,weight:3,fillColor:'#ffffff',fillOpacity:.8})
+      .bindPopup(`<b>${v.name}</b><br>${v.distance_km} km downstream (${v.chain_km} km chain)<br>${v.status}`).addTo(markerLayer);
+  });
+  (s.detections||[]).slice(0,25).forEach(d=>{if(d.lat==null)return;
+    L.circleMarker([d.lat,d.lon],{radius:4.5,color:'#d64545',weight:1,fillColor:'#d64545',fillOpacity:1})
+      .bindPopup(`<b>${d.label}</b> · ${d.confidence}%<br>${d.segment_name||d.segment}${d.chain_km!=null?' ('+d.chain_km+' km chain)':''}<br>Status: ${STAT[d.status]||d.status}`).addTo(markerLayer);});
+  if(!fitted&&m.bounds){map.fitBounds([[m.bounds.south,m.bounds.west],[m.bounds.north,m.bounds.east]],{padding:[30,30]});fitted=true;}
+}
+function drawWQ(s){
+  const w=s.water,a=w.anomalies||[];
+  const d=[['pH',w.ph.toFixed(1),a.includes('pH')],['Turbidity (NTU)',Math.round(w.turbidity),a.includes('turbidity')],
+    ['TDS (ppm)',Math.round(w.tds),a.includes('TDS')],['Temp (C)',w.temp_c.toFixed(1),false]];
+  $('wq').innerHTML=d.map(x=>`<div class="${x[2]?'bad':''}"><span class="note">${x[0]}</span><b>${x[1]}</b>${x[2]?'ANOMALY':'Normal'}</div>`).join('');
+}
+function drawChart(s){
+  const H=s.surge.history,n=H.length,max=6;
+  let p=H.map((v,i)=>`${10+i*(380/(n-1))},${140-Math.min(v,max)*(125/max)}`).join(' ');
+  const dz=140-4*(125/max);
+  $('chart').innerHTML=`<line x1="10" y1="${dz}" x2="390" y2="${dz}" stroke="#d64545" stroke-dasharray="4"/>
+  <text x="12" y="${dz-3}" font-size="9" fill="#d64545">Danger level 4 m</text>
+  <polyline points="${p}" fill="none" stroke="#1d7a8c" stroke-width="2.5"/>
+  <text x="12" y="12" font-size="10" fill="#5b7280">Water level (m) vs time</text>`;
+  const su=s.surge;
+  $('sir').className=su.siren?'on':'';$('bcn').className='bcn'+(su.beacon?' on':'');
+  if(su.alert&&!su.arrived&&su.countdown_min!=null){
+    $('surgeInfo').innerHTML=`<b>Rapid rise detected</b> (${su.rate.toFixed(0)} m/hour). Siren and beacon ON at the ghat. Both probes agree. Wave reaches the ghat in about <b>${su.countdown_min} minutes</b>.`;
+  }else if(su.arrived){
+    $('surgeInfo').innerHTML=`<b>Wave arrived</b> at the ghat. Siren and beacon stand down. Keep people away from the river.`;
+  }else if(su.active){
+    $('surgeInfo').innerHTML=`Watching... level rising at ${su.rate.toFixed(1)} m/hour (probe A ${su.level_a} m, probe B ${su.level_b} m).`;
+  }else{
+    $('surgeInfo').innerHTML='Upstream dual ultrasonic sensors are watching the water level. Press "Simulate surge" to see rate-of-rise detection, the ghat siren + beacon and the countdown.';
+  }
+}
+function drawVT(s){
+  $('vt').innerHTML=s.villages.map(v=>{
+    const st=v.status,cls=st==='standby'?'low':(st==='warned'?'med':'high');
+    const t={standby:'Standby',warned:'Warned',evacuate:'Evacuate now',water:'Water arrived'}[st];
+    return `<tr><td>${v.name}</td><td>${v.chain_km} km</td><td>${v.distance_km} km</td><td>${v.remaining_min} min</td><td><span class="pill ${cls}">${t}</span></td></tr>`;
+  }).join('');
+}
+function drawDets(s){
+  if(!s.detections||!s.detections.length)return;
+  $('det').innerHTML=s.detections.map(d=>{
+    const cls=STAT_CL[d.status]||'mut';
+    const txt=STAT[d.status]||d.status;
+    const src=d.coco?`<br><span class="note">${d.proxy?'~ approx. from':''} COCO: ${d.coco}</span>`:'';
+    return `<tr><td>${new Date(d.ts).toLocaleTimeString()}</td><td>${d.segment_name||d.segment}</td><td>${d.label}${src}</td><td>${d.confidence!=null?d.confidence+'%':'-'}</td><td><span class="pill ${cls}">${txt}</span></td><td>${d.lat!=null?d.lat.toFixed(4)+'N, '+d.lon.toFixed(4)+'E':'-'}</td></tr>`;
+  }).join('');
+}
+function drawReview(s){
+  const card=$('reviewCard');
+  $('revH').textContent=ta?'இங்கு ஜவுளி/சாய ஆலை கழிவுநீர் விட்டதா? அதிகாரி முடிவு தேவை':'Did a dyeing/textile unit discharge here? Officer decision required';
+  $('revNote').textContent=ta
+    ?'AI மட்டுமே பரிந்துரைக்கிறது. TNPCB-க்கு அறிவிப்பு செல்லும் முன், அதிகாரி இந்தப் பகுதியில் சாய/கழிவுநீர் வெளியேற்றம் நடந்ததா என முடிவு செய்ய வேண்டும். 85%-க்குக் கீழ் உள்ள முக்கிய கண்டறிதல்கள் இங்கே காத்திருக்கும்; 90% மேல் TNPCB தானாக அறிவிக்கப்படும்; 85–90% இடையே நிகழ்வு பதிவு செய்யப்பட்டு வரைபடத்தில் காட்டப்படும், ஆனால் அறிவிப்பு அனுப்பப்படாது.'
+    :'The AI only proposes. An officer must decide whether the stretch actually received a dye/effluent discharge before any notice goes to TNPCB. High-concern detections below 85% confidence wait here; at or above 90% TNPCB is notified automatically (PDF §3.2 / §6).';
+  if(!s.pending||!s.pending.length){card.hidden=true;return;}
+  card.hidden=false;
+  $('review').innerHTML=s.pending.map(p=>`<div class="rev">
+    <b>${p.label}</b> — ${p.confidence}% at ${p.segment_name||p.segment}${p.chain_km!=null?' ('+p.chain_km+' km chain)':''}
+    <span class="note">${new Date(p.ts).toLocaleTimeString()} · source ${p.source||'unknown'} · AI is asking: is this a real dye/effluent discharge?</span>
+    <div style="margin-top:5px"><button class="sm" data-act="approve" data-ts="${p.ts}">Confirm discharge → notify TNPCB</button>
+    <button class="sm alt" data-act="dismiss" data-ts="${p.ts}">Dismiss — false detection</button></div></div>`).join('');
+  $('review').querySelectorAll('button').forEach(b=>b.onclick=async()=>{
+    await fetch('/api/review',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ts:b.dataset.ts,action:b.dataset.act})});
+  });
+}
+function drawLog(s){
+  $('log').innerHTML=s.alerts.length?s.alerts.map(a=>{
+    const main=ta?a.ta:a.en, other=ta?a.en:a.ta;
+    return `<div><b>${new Date(a.ts).toLocaleTimeString()}</b> [${a.channel}] ${main}<span class="ta">${other}</span></div>`;
+  }).join(''):'<div class="note">No alerts yet.</div>';
+}
+function drawDev(s){
+  const list=(s.devices&&s.devices.length)?s.devices:[s.device||{}];
+  $('dev').innerHTML=list.map(d=>{
+    const v=d.battery_v;
+    const pct=v==null?0:Math.max(0,Math.min(100,((v-3.0)/(4.2-3.0))*100));
+    const cls=pct>50?'':pct>25?'warn':'bad';
+    const age=d.age_s==null?'—':d.age_s<5?'just now':Math.round(d.age_s)+'s ago';
+    const kind=d.station==='aqua-boat-1'?'sensor boat (water quality + GPS)':'flow station (level probes)';
+    return `<div class="devgroup"><span class="note">${kind}</span><b style="font-size:14px">${d.station}</b>
+      <div class="dev" style="margin-top:6px">
+      <div><span class="note">Battery</span><b>${v==null?'—':v.toFixed(2)+' V'}</b><span class="bar"><i class="${cls}" style="width:${pct}%"></i></span></div>
+      <div><span class="note">WiFi link (RSSI)</span><b>${d.rssi==null?'—':d.rssi+' dBm'}</b></div>
+      <div><span class="note">Level probes</span><b style="color:${d.sensor_ok?'var(--low)':'var(--high)'}">${d.sensor_ok?'OK':'FAULT'}</b></div>
+      <div><span class="note">Position</span><b>${d.lat==null?'—':d.lat.toFixed(4)+'N '+d.lon.toFixed(4)+'E'}</b><span class="note">${d.gps_fix?'GPS fix':(d.lat!=null?'configured coords':'no fix')}</span></div>
+      <div><span class="note">Last seen</span><b>${age}</b></div>
+      </div></div>`;
+  }).join('');
+}
+function drawChannels(s){
+  const c=s.channels||{};
+  const live=[['Dashboard + WebSocket',true],['Telegram Bot API',!!c.telegram],['Ghat siren + beacon',c.siren_beacon!==false],['CAP export (file)',c.cap_export!==false]];
+  const planned=c.planned||[];
+  $('chanList').innerHTML=
+    live.map(x=>`<div><span class="note">Implemented</span><b style="font-size:14px">${x[0]}</b><span class="note">${x[1]?'live':'not configured'}</span></div>`).join('')
+    + planned.map(p=>`<div><span class="note">Planned</span><b style="font-size:14px">${p}</b><span class="note">not implemented</span></div>`).join('');
+}
+function render(s){
+  last=s;
+  $('k1').textContent=s.kpis.detections;$('k2').textContent=s.kpis.high_risk;
+  $('k3').textContent=s.kpis.level_status;$('k4').textContent=s.kpis.alerts;
+  $('k5').textContent=s.kpis.pending||0;
+  $('k5').style.color=(s.kpis.pending>0)?'var(--med)':'';
+  $('chan').textContent=s.channels.telegram?'Telegram: live':'Telegram: off';
+  drawWQ(s);drawChart(s);drawVT(s);drawDets(s);drawReview(s);drawLog(s);drawDev(s);drawChannels(s);drawMap(s);
+  $('modelNote').textContent=MODEL_NOTE;
+}
+let ws,retry=1000;
+function connect(){
+  ws=new WebSocket((location.protocol==='https:'?'wss':'ws')+'://'+location.host+'/ws');
+  ws.onopen=()=>{$('conn').textContent='live';$('conn').classList.remove('off');retry=1000;};
+  ws.onmessage=e=>render(JSON.parse(e.data));
+  ws.onclose=()=>{$('conn').textContent='offline';$('conn').classList.add('off');
+    clearTimeout(ws._t);ws._t=setTimeout(connect,Math.min(retry+=1000,5000));};
+  ws.onerror=()=>ws.close();
+}
+const post=(p,b)=>fetch(p,{method:'POST',headers:b?{'Content-Type':'application/json'}:{},body:b?JSON.stringify(b):undefined}).catch(()=>{});
+$('bPol').onclick=()=>post('/api/events/wastewater');
+$('bSurge').onclick=()=>post('/api/events/surge');
+$('bReset').onclick=()=>post('/api/events/reset');
+$('bBreach').onclick=async()=>{
+  const r=await fetch('/api/events/breach',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({pin:$('pin').value})});
+  if(!r.ok)alert('Dam-breach command rejected: wrong officer PIN.');
+};
+$('bCap').onclick=async()=>{const c=$('cap');c.hidden=!c.hidden;
+  if(!c.hidden){const r=await fetch('/api/cap');c.textContent=JSON.stringify(await r.json(),null,2);}};
+$('ws').oninput=()=>{$('wsv').textContent=$('ws').value;};
+$('ws').onchange=()=>post('/api/wave-speed',{wave_speed:+$('ws').value});
+$('lang').onclick=()=>{ta=!ta;document.documentElement.lang=ta?'ta':'en';if(last)render(last);};
+initMap();
+fetch('/api/state').then(r=>r.json()).then(render).catch(()=>{});
+connect();
+</script>
+</body></html>

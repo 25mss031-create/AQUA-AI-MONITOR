@@ -1,0 +1,6 @@
+@echo off
+cd /d "%~dp0"
+echo Installing dependencies (first run only)...
+python -m pip install -r requirements.txt
+echo Starting AQUA AI Monitor backend...
+python run.py
