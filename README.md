@@ -140,6 +140,9 @@ Put 3-6 river photos in `samples/` and run:
 python -m backend.yolo_detector --source samples --conf 0.35
 ```
 
+`samples/bus.jpg` is a bundled test photo: it contains only people and a bus,
+so it should report **no river detections** — that is the class filter working.
+
 Webcam / live video:
 
 ```
