@@ -28,11 +28,9 @@ MODEL_NOTE = (
 
 
 def post(url, path, payload):
-    data = json.dumps(payload).encode()
-    req = urllib.request.Request(url + path, data=data, headers={"Content-Type": "application/json"})
+    from . import http_util
     try:
-        with urllib.request.urlopen(req, timeout=5) as r:
-            return r.status == 200
+        return http_util.post_json(url + path, payload, timeout=5)
     except Exception:
         return False
 

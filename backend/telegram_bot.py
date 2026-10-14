@@ -6,10 +6,8 @@ officer PIN.
 """
 import asyncio
 import json
-import urllib.parse
-import urllib.request
 
-from . import alerts, config
+from . import alerts, config, http_util
 
 HELP = (
     "AQUA AI officer bot (Noyyal pilot)\n"
@@ -30,10 +28,11 @@ HELP = (
 
 def api_call(method, **params):
     url = f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/{method}"
-    data = urllib.parse.urlencode(params).encode()
-    req = urllib.request.Request(url, data=data)
-    with urllib.request.urlopen(req, timeout=55) as r:
-        return json.loads(r.read().decode())
+    timeout = max(60, int(params.get("timeout", 0)) + 10)
+    status, body = http_util.get_json(url, params, timeout=timeout)
+    if status != 200 or not body.get("ok"):
+        raise RuntimeError(f"telegram {method} failed: HTTP {status} {body.get('description', '')}")
+    return body
 
 
 class TelegramBot:

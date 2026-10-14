@@ -5,3 +5,4 @@ data/annotated/
 *.pt
 .venv/
 env/
+.env

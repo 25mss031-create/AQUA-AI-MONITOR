@@ -1,7 +1,4 @@
-import urllib.parse
-import urllib.request
-
-from . import config
+from . import config, http_util
 
 
 def send_telegram(text, chat_id=None):
@@ -11,13 +8,10 @@ def send_telegram(text, chat_id=None):
     if not cid:
         return False
     url = f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/sendMessage"
-    data = urllib.parse.urlencode(
-        {"chat_id": cid, "text": text, "disable_web_page_preview": "true"}
-    ).encode()
     try:
-        req = urllib.request.Request(url, data=data)
-        with urllib.request.urlopen(req, timeout=6) as resp:
-            return resp.status == 200
+        status, body = http_util.post_form(
+            url, {"chat_id": cid, "text": text, "disable_web_page_preview": "true"})
+        return status == 200 and bool(body.get("ok"))
     except Exception:
         return False
 

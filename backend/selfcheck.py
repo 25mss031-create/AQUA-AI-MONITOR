@@ -85,12 +85,15 @@ def offline():
     async def _noop(msg):
         return None
 
+    saved_token = config.TELEGRAM_BOT_TOKEN
+    config.TELEGRAM_BOT_TOKEN = ""
     eng = engine.Engine(_noop)
     loop = asyncio.new_event_loop()
     try:
         loop.run_until_complete(eng.add_detection({"label": "Textile waste", "confidence": 80.0, "segment": "S4", "source": "selfcheck"}))
         loop.run_until_complete(eng.add_detection({"label": "Foam / discoloured water", "confidence": 87.0, "segment": "S4", "source": "selfcheck"}))
         loop.run_until_complete(eng.add_detection({"label": "Plastic bottle", "confidence": 93.0, "segment": "S2", "source": "selfcheck"}))
+        loop.run_until_complete(asyncio.sleep(0.05))
     finally:
         loop.close()
     statuses = {d["confidence"]: d["status"] for d in eng.detections}
@@ -124,6 +127,7 @@ def offline():
         r_pin_bad = loop2.run_until_complete(bot.handle("5551234", "/breach 0000"))
         breach_after_bad = eng.breach["confirmed"]
         r_pin_ok = loop2.run_until_complete(bot.handle("5551234", f"/breach {config.OFFICER_PIN}"))
+        loop2.run_until_complete(asyncio.sleep(0.05))
     finally:
         loop2.close()
         config.TELEGRAM_CHAT_ID = old_chat
@@ -134,6 +138,7 @@ def offline():
     check("bot status shows risk", "Below dam" in r_stat)
     check("bot rejects a wrong PIN", "REJECTED" in r_pin_bad and not breach_after_bad)
     check("bot accepts the real PIN", eng.breach["confirmed"] and "confirmed" in r_pin_ok.lower())
+    config.TELEGRAM_BOT_TOKEN = saved_token
 
 
 def online():

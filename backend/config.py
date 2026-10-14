@@ -8,6 +8,22 @@ DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DASHBOARD_DIR = BASE_DIR / "dashboard"
 
+
+def _load_dotenv(path):
+    try:
+        lines = Path(path).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, val = line.split("=", 1)
+        os.environ.setdefault(key.strip(), val.strip())
+
+
+_load_dotenv(BASE_DIR / ".env")
+
 DB_PATH = os.getenv("AQUA_DB", str(DATA_DIR / "aqua.db"))
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
